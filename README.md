@@ -25,15 +25,11 @@ Note: The requirements.txt does not include libm2k as it must be installed separ
 ### Usage
 Run the test suite:
 ```bash
-python read_signals.py
+python waveform_test.py
 ```
-The script will prompt you to connect three different waveforms:
-
-Sine wave
-
-Square wave
-
-Triangle wave
+The script will prompt you to test a sine wave.
 
 
-Press ENTER after connecting each waveform. The script will analyze the signal and report if it detected the correct waveform type, frequency, and amplitude.
+
+
+Press ENTER after starting the basic demo on the Arduino. The script will analyze the signal and report if it detected the correct waveform type, frequency, and amplitude.
