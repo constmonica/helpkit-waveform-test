@@ -22,14 +22,20 @@ Download and install libm2k from the [official releases](https://github.com/anal
 pip install -r requirements.txt
 ```
 Note: The requirements.txt does not include libm2k as it must be installed separately from the official installer.
-### Usage
+
+### 3. Install Arduino Demo Code
+
+1. Download and install [Arduino IDE](https://www.arduino.cc/en/software/)
+2. Connect Arduino HelpKit via USB 
+3. Select board and port in Tools menu
+4. Open *HelpKit_AD5443_v1_9_3_DCOff_Calibrate_Flash.ino* and add new demos as needed
+5. Click Upload to flash the code
+
+## Usage
 Run the test suite:
 ```bash
 python waveform_test.py
 ```
 The script will prompt you to test a sine wave.
-
-
-
 
 Press ENTER after starting the basic demo on the Arduino. The script will analyze the signal and report if it detected the correct waveform type, frequency, and amplitude.
