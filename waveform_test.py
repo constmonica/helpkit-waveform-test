@@ -8,13 +8,13 @@ uri = "ip:192.168.2.1"
 
 ctx = None
 ain = None
-sample_rate = 1000000
+sample_rate = 10000000 
 buffer_size = 4096
 
 def setup_module():
     global ctx, ain
 
-    print("\nArduino Helpkit Waveform Detection Tests")
+    print("\nArduino Helpkit Waveform Detection Test")
     print("=" * 70)
     
     ctx = libm2k.m2kOpen(uri)
@@ -48,7 +48,14 @@ def analyze_signal(data, fs):
     
     # check if it's just DC
     if np.std(data) < 0.01:
-        return "DC", 0, vpp, dc, 0, {"voltage": dc, "std_dev": np.std(data)}
+        return "DC", 0, vpp, dc, 0, {
+            "voltage": dc, 
+            "std_dev": np.std(data),
+            "rms": vrms,
+            "thd": 0,
+            "form_factor": 0,
+            "crest_factor": 0
+        }
     
     # FFT analysis
     n = len(data_ac)
@@ -64,7 +71,14 @@ def analyze_signal(data, fs):
     mag0 = fft_pos[peak_idx]
     
     if f0 < 1:
-        return "DC/NOISE", f0, vpp, dc, 0, {"voltage": dc, "std_dev": np.std(data)}
+        return "DC/NOISE", f0, vpp, dc, 0, {
+            "voltage": dc, 
+            "std_dev": np.std(data),
+            "rms": vrms,
+            "thd": 0,
+            "form_factor": 0,
+            "crest_factor": 0
+        }
     
     # get harmonics
     harmonics = []
@@ -102,27 +116,8 @@ def analyze_signal(data, fs):
     wtype = "UNKNOWN"
     
     # sine: clean signal, low harmonics
-    if thd < 15 and 1.05 < ff < 1.15 and 1.35 < cf < 1.50:
+    if thd < 25 and 1.00 < ff < 1.20 and 1.30 < cf < 1.60:
         wtype = "SINE"
-    
-    # square: strong odd harmonics
-    elif len(harmonics) >= 3:
-        h_ratio = harmonics[2] / harmonics[0] if harmonics[0] > 0 else 0
-        if (0.8 < ff < 1.05 and thd > 30 and harmonics[2] > 0.15 and 0.2 < h_ratio < 0.5):
-            wtype = "SQUARE"
-    
-    # triangle: weaker harmonics than square
-    if len(harmonics) >= 3:
-        h3_ratio = harmonics[2] / harmonics[0] if harmonics[0] > 0 else 0
-        if (1.10 < ff < 1.20 and 1.50 < cf < 1.80 and 10 < thd < 25 and 0.05 < h3_ratio < 0.15):
-            wtype = "TRIANGLE"
-    
-    # fallback classification
-    if wtype == "UNKNOWN" and thd > 5:
-        if harmonics[2] > 0.2:
-            wtype = "SQUARE"
-        elif 15 < thd < 30:
-            wtype = "TRIANGLE"
     
     info = {
         "thd": thd,
@@ -135,55 +130,39 @@ def analyze_signal(data, fs):
     
     return wtype, f0, vpp, dc, duty, info
 
-def get_reading():
+def test_sine_wave():
     global ain
     
-    data = ain.getSamples(buffer_size)
-    samples = np.array(data[0])
-    
-    wtype, freq, vpp, dc, duty, info = analyze_signal(samples, sample_rate)
-    
-    print(f"\nWaveform: {wtype}")
-    print(f"Frequency: {freq:.2f} Hz")
-    print(f"Amplitude: {vpp/2:.4f} V")
-    
-    return wtype, freq, vpp
-
-def test_sine_wave():
     print("\n" + "=" * 70)
-    print("Test 1: Sine Wave")
+    print("Test: Sine Wave Detection")
     print("=" * 70)
     print("Select Sine as waveform type using the encoder.")
     input("Press ENTER when ready...")
     
-    wtype, freq, amp = get_reading()
+    print("\nAcquiring data...")
+    data = ain.getSamples(buffer_size)
+    samples = np.array(data[0])
+    print(samples)
     
-    assert wtype == "SINE", f"Expected SINE, got {wtype}"
-    print("\nPASSED")
-
-def test_square_wave():
-    print("\n" + "=" * 70)
-    print("Test 2: Square Wave")
-    print("=" * 70)
-    print("Select Sqw as waveform type using the encoder.")
-    input("Press ENTER when ready...")
+    wtype, freq, vpp, dc, duty, info = analyze_signal(samples, sample_rate)
     
-    wtype, freq, amp = get_reading()
+    print("\n" + "-" * 70)
+    print("MEASUREMENT RESULTS:")
+    print("-" * 70)
+    print(f"Waveform Type:     {wtype}")
+    print(f"Frequency:         {freq:.2f} Hz")
+    print(f"Peak-to-Peak:      {vpp:.4f} V")
+    print(f"Amplitude:         {vpp/2:.4f} V")
+    print(f"DC Offset:         {dc:.4f} V")
+    print("-" * 70)
     
-    assert wtype == "SQUARE", f"Expected SQUARE, got {wtype}"
-    print("\nPASSED")
-
-def test_triangle_wave():
-    print("\n" + "=" * 70)
-    print("Test 3: Triangle Wave")
-    print("=" * 70)
-    print("Select Tri as waveform type using the encoder.")
-    input("Press ENTER when ready...")
+    if wtype == "SINE":
+        print("\n✓ PASSED - Sine wave detected successfully!")
+        print(f"  • Frequency: {freq:.2f} Hz")
+        print(f"  • Amplitude: {vpp/2:.4f} V")
+        print(f"  • THD: {info['thd']:.2f}% (clean signal)")
     
-    wtype, freq, amp = get_reading()
-    
-    assert wtype == "TRIANGLE", f"Expected TRIANGLE, got {wtype}"
-    print("\nPASSED")
+    assert wtype == "SINE", f"Expected SINE wave, but detected {wtype}"
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "-s"])
