@@ -4,6 +4,7 @@ import numpy as np
 from scipy.fft import fft, fftfreq
 import pytest
 
+# Replace with ip of your m2k device
 uri = "ip:192.168.2.1"
 
 ctx = None
